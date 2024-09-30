@@ -14,7 +14,6 @@ namespace GpuRayTracing
         public RayTracingPass(RayTracingPassSettings passPassSettings)
         {
             _passSettings = passPassSettings;
-
             renderPassEvent = _passSettings.renderPassEvent;
         }
 
@@ -22,22 +21,19 @@ namespace GpuRayTracing
         {
             InitRenderTexture();
 
-            // Set the target and dispatch the compute shader
+            // Set render target and run compute shader
             _passSettings.RayTracingShader.SetTexture(0, Result, _rt);
             int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
             _passSettings.RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
 
-            // Blit the result texture to the screen
+            // Blit material
             if (_material == null)
             {
-                //_material = new Material(Shader.Find("Hidden/AddShader"));
                 _material = new Material(Shader.Find("Hidden/CopyHDR"));
             }
 
-            var descriptor = renderingData.cameraData.cameraTargetDescriptor;
-            descriptor.depthBufferBits = 0;
-
+            // Copy render target to screen
             var cb = CommandBufferPool.Get();
             Blit(cb, _rt, renderingData.cameraData.renderer.cameraColorTarget, _material);
             context.ExecuteCommandBuffer(cb);
@@ -48,13 +44,11 @@ namespace GpuRayTracing
         {
             if (_rt == null || _rt.width != Screen.width || _rt.height != Screen.height)
             {
-                // Release render texture if we already have one
                 if (_rt != null)
                 {
                     _rt.Release();
                 }
 
-                // Get a render target for Ray Tracing
                 _rt = new RenderTexture(
                     Screen.width,
                     Screen.height,
@@ -64,6 +58,7 @@ namespace GpuRayTracing
                 {
                     enableRandomWrite = true
                 };
+                
                 _rt.Create();
             }
         }
