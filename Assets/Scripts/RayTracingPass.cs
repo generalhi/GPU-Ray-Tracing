@@ -8,8 +8,13 @@ namespace GpuRayTracing
     {
         private readonly RayTracingPassSettings _passSettings;
         private Material _material;
+
         private RenderTexture _rt;
+
         private readonly int Result = Shader.PropertyToID("Result");
+        private readonly int World = Shader.PropertyToID("World");
+        private readonly int Projection = Shader.PropertyToID("Projection");
+        private readonly int SkyBoxTexture = Shader.PropertyToID("SkyBoxTexture");
 
         public RayTracingPass(RayTracingPassSettings passPassSettings)
         {
@@ -22,7 +27,7 @@ namespace GpuRayTracing
             InitRenderTexture();
 
             // Set render target and run compute shader
-            _passSettings.RayTracingShader.SetTexture(0, Result, _rt);
+            SetShaderParams(ref renderingData);
             int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
             _passSettings.RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
@@ -58,9 +63,18 @@ namespace GpuRayTracing
                 {
                     enableRandomWrite = true
                 };
-                
+
                 _rt.Create();
             }
+        }
+
+        private void SetShaderParams(ref RenderingData renderingData)
+        {
+            _passSettings.RayTracingShader.SetTexture(0, Result, _rt);
+            _passSettings.RayTracingShader.SetMatrix(World, renderingData.cameraData.camera.cameraToWorldMatrix);
+            _passSettings.RayTracingShader.SetMatrix(Projection,
+                renderingData.cameraData.camera.projectionMatrix.inverse);
+            _passSettings.RayTracingShader.SetTexture(0, SkyBoxTexture, _passSettings.SkyBox);
         }
     }
 }
