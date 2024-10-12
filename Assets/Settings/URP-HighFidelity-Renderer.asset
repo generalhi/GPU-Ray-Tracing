@@ -17,6 +17,7 @@ MonoBehaviour:
     renderPassEvent: 500
     RayTracingShader: {fileID: 7200000, guid: a9e32aabe5fbecc4da45c6295c9a766a, type: 3}
     SkyBox: {fileID: 2800000, guid: 399ab9b0d040a8540b52f8f435d2d006, type: 3}
+    ReflectionsCount: 6
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
