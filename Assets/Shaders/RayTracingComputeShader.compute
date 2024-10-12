@@ -10,10 +10,13 @@ float4x4 Projection;
 Texture2D<float4> SkyBoxTexture;
 SamplerState sampler_SkyBoxTexture;
 
+int ReflectionsCount;
+
 struct Ray
 {
     float3 Position;
     float3 Direction;
+    float3 Energy;
 };
 
 Ray InitRay(float3 position, float3 direction)
@@ -21,7 +24,24 @@ Ray InitRay(float3 position, float3 direction)
     Ray r;
     r.Position = position;
     r.Direction = direction;
+    r.Energy = 1;
     return r;
+}
+
+struct RayHit
+{
+    float3 Position;
+    float Distance;
+    float3 Normal;
+};
+
+RayHit InitRayHit()
+{
+    RayHit hit;
+    hit.Position = 0;
+    hit.Distance = 1.#INF;
+    hit.Normal = 0;
+    return hit;
 }
 
 Ray InitCameraRay(float2 uv)
@@ -35,6 +55,68 @@ Ray InitCameraRay(float2 uv)
     return InitRay(position, direction);
 }
 
+void IntersectsGroundPlane(Ray ray, inout RayHit hit)
+{
+    float d = -ray.Position.y / ray.Direction.y;
+    if (d > 0 && d < hit.Distance)
+    {
+        hit.Position = ray.Position + d * ray.Direction;
+        hit.Distance = d;
+        hit.Normal = float3(0, 1, 0);
+    }
+}
+
+void IntersectsSphere(Ray ray, inout RayHit hit, float4 sphere)
+{
+    float3 v = ray.Position - sphere.xyz;
+    float p1 = -dot(ray.Direction, v);
+    float p2sqr = p1 * p1 - dot(v, v) + sphere.w * sphere.w;
+    if (p2sqr < 0)
+    {
+        return;
+    }
+    float p2 = sqrt(p2sqr);
+    float d = p1 - p2 > 0
+                  ? p1 - p2
+                  : p1 + p2;
+    if (d > 0 && d < hit.Distance)
+    {
+        hit.Position = ray.Position + d * ray.Direction;
+        hit.Distance = d;
+        hit.Normal = normalize(hit.Position - sphere.xyz);
+    }
+}
+
+RayHit Trace(Ray ray)
+{
+    RayHit hit = InitRayHit();
+    IntersectsGroundPlane(ray, hit);
+    IntersectsSphere(ray, hit, float4(0, 3, 0, 1));
+    return hit;
+}
+
+float3 Shade(inout Ray ray, RayHit hit)
+{
+    if (hit.Distance < 1.#INF)
+    {
+        float3 specular = 0.8;
+
+        ray.Position = hit.Position + hit.Normal * 0.001;
+        ray.Direction = reflect(ray.Direction, hit.Normal);
+        ray.Energy *= specular;
+        //return hit.Normal * 0.5 + 0.5;
+        return 0;
+    }
+    else
+    {
+        ray.Energy = 0;
+
+        float phi = atan2(ray.Direction.x, -ray.Direction.z) / -PI * 0.5;
+        float theta = acos(ray.Direction.y) / -PI;
+        return SkyBoxTexture.SampleLevel(sampler_SkyBoxTexture, float2(phi, theta), 0).xyz;
+    }
+}
+
 [numthreads(8,8,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -44,13 +126,20 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     Result.GetDimensions(w, h);
     float2 uv = id.xy / float2(w, h) * 2 - 1;
 
-    Ray r = InitCameraRay(uv);
+    Ray ray = InitCameraRay(uv);
+    float3 result = 0; // Shade(ray, hit);
 
-    float phi = atan2(r.Direction.x, -r.Direction.z) / -PI * 0.5;
-    float theta = acos(r.Direction.y) / -PI;
+    for (int i = 0; i < ReflectionsCount; i++)
+    {
+        RayHit hit = Trace(ray);
+        result += ray.Energy * Shade(ray, hit);
 
-    float4 scyColor = SkyBoxTexture.SampleLevel(sampler_SkyBoxTexture, float2(phi, theta), 0);
+        if (!any(ray.Energy))
+        {
+            break;
+        }
+    }
 
     //Result[id.xy] = float4(uv.x, uv.y, 0, 1);
-    Result[id.xy] = scyColor;
+    Result[id.xy] = float4(result, 1);
 }

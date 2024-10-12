@@ -6,7 +6,7 @@ namespace GpuRayTracing
 {
     public class RayTracingPass : ScriptableRenderPass
     {
-        private readonly RayTracingPassSettings _passSettings;
+        private readonly RayTracingPassSettings _settings;
         private Material _material;
 
         private RenderTexture _rt;
@@ -15,14 +15,17 @@ namespace GpuRayTracing
         private readonly int World = Shader.PropertyToID("World");
         private readonly int Projection = Shader.PropertyToID("Projection");
         private readonly int SkyBoxTexture = Shader.PropertyToID("SkyBoxTexture");
+        private readonly int ReflectionsCount = Shader.PropertyToID("ReflectionsCount");
 
-        public RayTracingPass(RayTracingPassSettings passPassSettings)
+        public RayTracingPass(RayTracingPassSettings settings)
         {
-            _passSettings = passPassSettings;
-            renderPassEvent = _passSettings.renderPassEvent;
+            _settings = settings;
+            renderPassEvent = _settings.renderPassEvent;
         }
 
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void Execute(
+            ScriptableRenderContext context,
+            ref RenderingData renderingData)
         {
             InitRenderTexture();
 
@@ -30,7 +33,7 @@ namespace GpuRayTracing
             SetShaderParams(ref renderingData);
             int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
             int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
-            _passSettings.RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
+            _settings.RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
 
             // Blit material
             if (_material == null)
@@ -70,11 +73,13 @@ namespace GpuRayTracing
 
         private void SetShaderParams(ref RenderingData renderingData)
         {
-            _passSettings.RayTracingShader.SetTexture(0, Result, _rt);
-            _passSettings.RayTracingShader.SetMatrix(World, renderingData.cameraData.camera.cameraToWorldMatrix);
-            _passSettings.RayTracingShader.SetMatrix(Projection,
+            _settings.RayTracingShader.SetTexture(0, Result, _rt);
+            _settings.RayTracingShader.SetMatrix(World, renderingData.cameraData.camera.cameraToWorldMatrix);
+            _settings.RayTracingShader.SetMatrix(
+                Projection,
                 renderingData.cameraData.camera.projectionMatrix.inverse);
-            _passSettings.RayTracingShader.SetTexture(0, SkyBoxTexture, _passSettings.SkyBox);
+            _settings.RayTracingShader.SetTexture(0, SkyBoxTexture, _settings.SkyBox);
+            _settings.RayTracingShader.SetInt(ReflectionsCount, _settings.ReflectionsCount);
         }
     }
 }
