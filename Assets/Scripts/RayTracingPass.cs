@@ -11,11 +11,12 @@ namespace GpuRayTracing
 
         private RenderTexture _rt;
 
-        private readonly int Result = Shader.PropertyToID("Result");
-        private readonly int World = Shader.PropertyToID("World");
-        private readonly int Projection = Shader.PropertyToID("Projection");
-        private readonly int SkyBoxTexture = Shader.PropertyToID("SkyBoxTexture");
-        private readonly int ReflectionsCount = Shader.PropertyToID("ReflectionsCount");
+        private readonly int Id_Result = Shader.PropertyToID("Result");
+        private readonly int Id_World = Shader.PropertyToID("World");
+        private readonly int Id_Projection = Shader.PropertyToID("Projection");
+        private readonly int Id_SkyBoxTexture = Shader.PropertyToID("SkyBoxTexture");
+        private readonly int Id_Time = Shader.PropertyToID("Time");
+        private readonly int Id_ReflectionsCount = Shader.PropertyToID("ReflectionsCount");
 
         public RayTracingPass(RayTracingPassSettings settings)
         {
@@ -73,13 +74,14 @@ namespace GpuRayTracing
 
         private void SetShaderParams(ref RenderingData renderingData)
         {
-            _settings.RayTracingShader.SetTexture(0, Result, _rt);
-            _settings.RayTracingShader.SetMatrix(World, renderingData.cameraData.camera.cameraToWorldMatrix);
+            _settings.RayTracingShader.SetTexture(0, Id_Result, _rt);
+            _settings.RayTracingShader.SetMatrix(Id_World, renderingData.cameraData.camera.cameraToWorldMatrix);
             _settings.RayTracingShader.SetMatrix(
-                Projection,
+                Id_Projection,
                 renderingData.cameraData.camera.projectionMatrix.inverse);
-            _settings.RayTracingShader.SetTexture(0, SkyBoxTexture, _settings.SkyBox);
-            _settings.RayTracingShader.SetInt(ReflectionsCount, _settings.ReflectionsCount);
+            _settings.RayTracingShader.SetTexture(0, Id_SkyBoxTexture, _settings.SkyBox);
+            _settings.RayTracingShader.SetInt(Id_ReflectionsCount, _settings.ReflectionsCount);
+            _settings.RayTracingShader.SetFloat(Id_Time, Time.time);
         }
     }
 }
