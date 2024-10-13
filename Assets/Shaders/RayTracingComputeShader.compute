@@ -98,9 +98,18 @@ RayHit Trace(Ray ray)
     return hit;
 }
 
+float3 SkyBoxColor(inout Ray ray)
+{
+    ray.Energy = 0.0;
+    float phi = atan2(ray.Direction.x, -ray.Direction.z) / -PI * 0.5;
+    float theta = acos(ray.Direction.y) / -PI;
+    return SkyBoxTexture.SampleLevel(sampler_SkyBoxTexture, float2(phi, theta), 0.0).xyz;
+}
+
 float3 Shade(inout Ray ray, RayHit hit)
 {
-    if (hit.Distance < 1.#INF)
+    //if (hit.Distance < 1.#INF)
+    if (hit.Distance > 0.0)
     {
         float3 specular = 0.8;
 
@@ -112,11 +121,7 @@ float3 Shade(inout Ray ray, RayHit hit)
     }
     else
     {
-        ray.Energy = 0.0;
-
-        float phi = atan2(ray.Direction.x, -ray.Direction.z) / -PI * 0.5;
-        float theta = acos(ray.Direction.y) / -PI;
-        return SkyBoxTexture.SampleLevel(sampler_SkyBoxTexture, float2(phi, theta), 0.0).xyz;
+        return SkyBoxColor(ray);
     }
 }
 
@@ -144,13 +149,13 @@ float4 MainRaytracing(uint3 id : SV_DispatchThreadID)
     return float4(result, 1.0);
 }
 
-// Raymarching
-float sdSphere(float3 p)
+// --- Raymarching -------------------------------------------------------------------------
+float SdSphere(float3 p, float s)
 {
-    return length(p) - 1.0;
+    return length(p) - s;
 }
 
-float sdBox(float3 p, float3 b)
+float SdBox(float3 p, float3 b)
 {
     float3 q = abs(p) - b;
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
@@ -162,22 +167,88 @@ float SmoothMin(float a, float b, float k)
     return min(a, b) - h * h * h * h * (1.0 / 6.0);
 }
 
+float2 SmoothMin2(float a, float b, float k)
+{
+    k *= 6.0;
+    float h = max(k - abs(a - b), 0.0) / k;
+    float m = h * h * h * 0.5;
+    float s = m * k * (1.0 / 3.0);
+    return a < b
+               ? float2(a - s, m)
+               : float2(b - s, 1.0 - m);
+}
+
+float3 DeltaSin(float speed, float3 axis)
+{
+    return axis * sin(Time * speed);
+}
+
+float3 Move(float3 position, float3 delta)
+{
+    return position + delta;
+}
+
 float3 Rotation(float3 p, float3 axis, float angle)
 {
     return lerp(dot(axis, p) * axis, p, cos(angle))
         + cross(axis, p) * sin(angle);
 }
 
-float RaymarchingSphere(float3 position)
+float2 Map(float3 position)
 {
-    float3 deltaPosition = float3(sin(Time) * 3.0, 0.0, 0.0);
-    float sphere = sdSphere(position - deltaPosition);
+    //float3 deltaPosition = float3(sin(Time * 0.3) * 3.0, 0.0, 0.0);
+    //float sphere = SdSphere(position - deltaPosition);
+    float sphere = SdSphere(Move(position, DeltaSin(1.0, float3(2.5, 0.0,0.0))), 0.9);
 
-    float3 pBox = Rotation(position, float3(0.0, 0.0, 1.0), Time);
-    pBox = Rotation(pBox, float3(1.0, 0.0, 0.0), Time * 0.1);
-    float box = sdBox(pBox, 0.5);
+    float3 pBox = position;
+    pBox = Move(position, DeltaSin(1.0, float3(0.0, 1.0,0.0)));
+    pBox = Rotation(pBox, float3(0.0, 0.0, 1.0), Time * 0.5);
+    pBox = Rotation(pBox, float3(1.0, 0.0, 0.0), Time * 1.0);
+    float box = SdBox(pBox, 0.5);
     float ground = position.y + 0.5;
-    return SmoothMin(ground, SmoothMin(sphere, box, 2.0), 1.0);
+    //return SmoothMin(ground, SmoothMin(sphere, box, 2.0), 1.0);
+    return SmoothMin2(ground, SmoothMin2(sphere, box, 0.2), 0.05);
+}
+
+float3 CalcNormal(in float3 pos)
+{
+    float2 e = float2(1.0, -1.0) * 0.5773 * 0.005;
+    return normalize(
+        e.xyy * Map(pos + e.xyy).x +
+        e.yyx * Map(pos + e.yyx).x +
+        e.yxy * Map(pos + e.yxy).x +
+        e.xxx * Map(pos + e.xxx).x);
+}
+
+RayHit RaymarchingTrace(Ray ray)
+{
+    const float MaxDistance = 10.0;
+    RayHit hit = InitRayHit();
+    hit.Distance = 0.0;
+
+    for (int i = 0; i < 512; i++)
+    {
+        hit.Position = ray.Position + ray.Direction * hit.Distance;
+        float distance = Map(hit.Position);
+        if (distance < 0.0 ||
+            hit.Distance > MaxDistance)
+        {
+            break;
+        }
+
+        hit.Distance += distance;
+    }
+
+    if (hit.Distance > MaxDistance)
+    {
+        hit.Distance = -1.0;
+    }
+    else
+    {
+        hit.Normal = CalcNormal(hit.Position);
+    }
+
+    return hit;
 }
 
 float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
@@ -188,22 +259,32 @@ float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
 
     Ray ray = InitRay(float3(0.0, 0.0, -3.0), normalize(float3(uvr, 1.0)));
     float3 color = 0.0;
-    float t = 0.0;
 
-    for (int i = 0; i < 80.0; i++)
+    for (int i = 0; i < ReflectionsCount; i++)
     {
-        float3 p = ray.Position + ray.Direction * t;
-        float d = RaymarchingSphere(p);
-        t += d;
+        RayHit hit = RaymarchingTrace(ray);
+        color += ray.Energy * Shade(ray, hit);
 
-        if (d < 0.001 ||
-            t > 100.0)
+        if (!any(ray.Energy))
         {
             break;
         }
     }
 
-    color = t * 0.1;
+    /*
+    if (hit.Distance > 0)
+    {
+        float3 position = ray.Position + ray.Direction * hit.Distance;
+        float3 normal = calcNormal(position);
+        
+        color = hit.Distance * 0.1;
+    }
+    else
+    {
+        color = SkyBoxColor(ray);
+    }
+    */
+
     return float4(color, 1.0);
 }
 
