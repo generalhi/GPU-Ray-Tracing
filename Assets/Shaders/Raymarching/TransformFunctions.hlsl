@@ -1,6 +1,6 @@
-﻿float3 DeltaSin(float speed, float3 axis)
+﻿float3 DeltaSin(float delta, float3 axis, float speed)
 {
-    return axis * sin(Time * speed);
+    return axis * delta * sin(Time * speed);
 }
 
 float3 Move(float3 position, float3 delta)

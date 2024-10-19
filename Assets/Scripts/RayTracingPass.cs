@@ -15,6 +15,7 @@ namespace GpuRayTracing
 
         private ComputeBuffer _bufferPlane;
         private ComputeBuffer _bufferSphere;
+        private ComputeBuffer _bufferCubes;
 
         private readonly int Id_Result = Shader.PropertyToID("Result");
         private readonly int Id_World = Shader.PropertyToID("World");
@@ -26,6 +27,7 @@ namespace GpuRayTracing
 
         private readonly int Id_Planes = Shader.PropertyToID("Plains");
         private readonly int Id_Spheres = Shader.PropertyToID("Spheres");
+        private readonly int Id_Cubes = Shader.PropertyToID("Cubes");
 
         public RayTracingPass(RayTracingPassSettings settings)
         {
@@ -86,6 +88,7 @@ namespace GpuRayTracing
         {
             InitPlanes();
             InitSpheres();
+            InitCubes();
         }
 
         private void InitPlanes()
@@ -95,7 +98,7 @@ namespace GpuRayTracing
                 new RPlane
                 {
                     Normal = new Vector3(0f, 1f, 0f),
-                    K = 0.5f,
+                    K = 0.6f,
                     Smooth = 0.2f,
                     Specular = new Vector3(0f, 0f, 0f),
                     Albedo = new Vector3(0f, 0f, 0f)
@@ -122,6 +125,9 @@ namespace GpuRayTracing
             {
                 new RSphere
                 {
+                    Position = new Vector3(0f, 0f, 0f),
+                    Move = new Vector3(2.5f, 0f, 0f),
+                    MoveSpeed = new Vector3(1.0f, 0f, 0f),
                     Radius = 0.9f,
                     Smooth = 0.2f,
                     Specular = new Vector3(0f, 0f, 0f),
@@ -141,6 +147,37 @@ namespace GpuRayTracing
             }
 
             _bufferSphere.SetData(spheres);
+        }
+
+        private void InitCubes()
+        {
+            var cubes = new List<RCube>
+            {
+                new RCube
+                {
+                    Position = new Vector3(0f, 0f, 0f),
+                    Move = new Vector3(0f, 1.2f, 0f),
+                    MoveSpeed = new Vector3(0f, 1f, 0f),
+                    Rotation = new Vector3(1f, 0f, 0.5f),
+                    Size = 0.5f,
+                    Smooth = 0.2f,
+                    Specular = new Vector3(0f, 0f, 0f),
+                    Albedo = new Vector3(0f, 0f, 0f)
+                }
+            };
+
+            if (_bufferCubes != null && _bufferCubes.count > 0)
+            {
+                _bufferCubes.Release();
+                _bufferCubes = null;
+            }
+
+            if (_bufferCubes == null)
+            {
+                _bufferCubes = new ComputeBuffer(cubes.Count, RCube.GetSize());
+            }
+
+            _bufferCubes.SetData(cubes);
         }
 
         private void SetShaderParams(ref RenderingData renderingData)
@@ -168,6 +205,11 @@ namespace GpuRayTracing
             if (_bufferSphere != null)
             {
                 shader.SetBuffer(0, Id_Spheres, _bufferSphere);
+            }
+
+            if (_bufferCubes != null)
+            {
+                shader.SetBuffer(0, Id_Cubes, _bufferCubes);
             }
 
             // Other params

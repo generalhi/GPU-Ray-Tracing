@@ -1,5 +1,6 @@
 #pragma kernel CSMain
 
+#include "InputStructs.hlsl"
 #include "InputProperties.hlsl"
 #include "Ray.hlsl"
 #include "RayHit.hlsl"
@@ -21,21 +22,29 @@ float2 Map(inout RayHit hit)
 {
     float2 result = 1.0;
 
-    float3 pBox = hit.Position;
-    pBox = Move(pBox, DeltaSin(1.0, float3(0.0, 1.0, 0.0)));
-    pBox = Rotation(pBox, float3(0.0, 0.0, 1.0), Time * 0.5);
-    pBox = Rotation(pBox, float3(1.0, 0.0, 0.0), Time * 1.0);
-    float box = SdBox(pBox, 0.5);
-
-    result = SmoothMin2(result, box, 0.2);
+    uint cubeCount, cubeStride;
+    Spheres.GetDimensions(cubeCount, cubeStride);
+    for (uint i = 0; i < cubeCount; i++)
+    {
+        Cube cube = Cubes[i];
+        float3 move = 0.0;
+        move += DeltaSin(cube.Move.x, float3(1.0, 0.0, 0.0), cube.MoveSpeed.x);
+        move += DeltaSin(cube.Move.y, float3(0.0, 1.0, 0.0), cube.MoveSpeed.y);
+        move += DeltaSin(cube.Move.z, float3(0.0, 0.0, 1.0), cube.MoveSpeed.z);
+        float3 position = Move(hit.Position, move);
+        position = Rotation(position, float3(0.0, 0.0, 1.0), Time * cube.Rotation.z);
+        position = Rotation(position, float3(1.0, 0.0, 0.0), Time * cube.Rotation.x);
+        result = SmoothMin2(result, SdCube(position, cube.Size), cube.Smooth);
+    }
 
     uint sphereCount, sphereStride;
     Spheres.GetDimensions(sphereCount, sphereStride);
     for (uint i = 0; i < sphereCount; i++)
     {
         Sphere sphere = Spheres[i];
-        float3 sPosition = Move(hit.Position, DeltaSin(1.0, float3(2.5, 0.0, 0.0)));
-        result = SmoothMin2(result, SdSphere(sPosition, sphere.Radius), sphere.Smooth);
+        float3 move = DeltaSin(sphere.Move.x, float3(1.0, 0.0, 0.0), sphere.MoveSpeed.x);
+        float3 position = Move(hit.Position, move);
+        result = SmoothMin2(result, SdSphere(position, sphere.Radius), sphere.Smooth);
     }
 
     uint plainsCount, plainsStride;
