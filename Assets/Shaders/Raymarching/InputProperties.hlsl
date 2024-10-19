@@ -20,5 +20,13 @@ struct Plane
     float3 Albedo;
 };
 
-StructuredBuffer<Plane> Plains;
+struct Sphere
+{
+    float Radius;
+    float Smooth;
+    float3 Specular;
+    float3 Albedo;
+};
 
+StructuredBuffer<Plane> Plains;
+StructuredBuffer<Sphere> Spheres;

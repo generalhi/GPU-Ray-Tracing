@@ -19,9 +19,7 @@ float3 SkyBoxColor(inout Ray ray)
 
 float2 Map(inout RayHit hit)
 {
-    float2 result = 0.0;
-    
-    float sphere = SdSphere(Move(hit.Position, DeltaSin(1.0, float3(2.5, 0.0, 0.0))), 0.9);
+    float2 result = 1.0;
 
     float3 pBox = hit.Position;
     pBox = Move(pBox, DeltaSin(1.0, float3(0.0, 1.0, 0.0)));
@@ -29,14 +27,23 @@ float2 Map(inout RayHit hit)
     pBox = Rotation(pBox, float3(1.0, 0.0, 0.0), Time * 1.0);
     float box = SdBox(pBox, 0.5);
 
-    result = SmoothMin2(sphere, box, 0.2);
-    
+    result = SmoothMin2(result, box, 0.2);
+
+    uint sphereCount, sphereStride;
+    Spheres.GetDimensions(sphereCount, sphereStride);
+    for (uint i = 0; i < sphereCount; i++)
+    {
+        Sphere sphere = Spheres[i];
+        float3 sPosition = Move(hit.Position, DeltaSin(1.0, float3(2.5, 0.0, 0.0)));
+        result = SmoothMin2(result, SdSphere(sPosition, sphere.Radius), sphere.Smooth);
+    }
+
     uint plainsCount, plainsStride;
     Plains.GetDimensions(plainsCount, plainsStride);
     for (uint i = 0; i < plainsCount; i++)
     {
         Plane plane = Plains[i];
-        result = SmoothMin2(result, SdPlane(hit.Position, plane), plane.Smooth);
+        result = SmoothMin2(result, SdPlane(hit.Position, plane.Normal, plane.K), plane.Smooth);
     }
 
     return result;

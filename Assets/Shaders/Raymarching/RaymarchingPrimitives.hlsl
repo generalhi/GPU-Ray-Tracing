@@ -1,11 +1,11 @@
-float SdPlane(float3 position, in Plane plane)
+float SdPlane(float3 position, float3 normal, float k)
 {
-    return dot(position, plane.Normal) + plane.K;
+    return dot(position, normal) + k;
 }
 
-float SdSphere(float3 p, float s)
+float SdSphere(float3 p, float r)
 {
-    return length(p) - s;
+    return length(p) - r;
 }
 
 float SdBox(float3 p, float3 b)

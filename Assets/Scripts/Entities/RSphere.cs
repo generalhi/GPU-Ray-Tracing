@@ -5,8 +5,8 @@ namespace GpuRayTracing.Entities
 {
     public struct RSphere
     {
-        public Vector3 Position;
         public float Radius;
+        public float Smooth;
         public Vector3 Albedo;
         public Vector3 Specular;
 

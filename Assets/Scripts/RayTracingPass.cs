@@ -13,7 +13,8 @@ namespace GpuRayTracing
         private Material _material;
         private RenderTexture _rt;
 
-        private ComputeBuffer _planeBufer;
+        private ComputeBuffer _bufferPlane;
+        private ComputeBuffer _bufferSphere;
 
         private readonly int Id_Result = Shader.PropertyToID("Result");
         private readonly int Id_World = Shader.PropertyToID("World");
@@ -24,6 +25,7 @@ namespace GpuRayTracing
         private readonly int Id_ReflectionsCount = Shader.PropertyToID("ReflectionsCount");
 
         private readonly int Id_Planes = Shader.PropertyToID("Plains");
+        private readonly int Id_Spheres = Shader.PropertyToID("Spheres");
 
         public RayTracingPass(RayTracingPassSettings settings)
         {
@@ -83,6 +85,7 @@ namespace GpuRayTracing
         private void InitScene()
         {
             InitPlanes();
+            InitSpheres();
         }
 
         private void InitPlanes()
@@ -99,18 +102,45 @@ namespace GpuRayTracing
                 }
             };
 
-            if (_planeBufer != null && _planeBufer.count > 0)
+            if (_bufferPlane != null && _bufferPlane.count > 0)
             {
-                _planeBufer.Release();
-                _planeBufer = null;
+                _bufferPlane.Release();
+                _bufferPlane = null;
             }
 
-            if (_planeBufer == null)
+            if (_bufferPlane == null)
             {
-                _planeBufer = new ComputeBuffer(planes.Count, RPlane.GetSize());
+                _bufferPlane = new ComputeBuffer(planes.Count, RPlane.GetSize());
             }
-            
-            _planeBufer.SetData(planes);
+
+            _bufferPlane.SetData(planes);
+        }
+
+        private void InitSpheres()
+        {
+            var spheres = new List<RSphere>
+            {
+                new RSphere
+                {
+                    Radius = 0.9f,
+                    Smooth = 0.2f,
+                    Specular = new Vector3(0f, 0f, 0f),
+                    Albedo = new Vector3(0f, 0f, 0f)
+                }
+            };
+
+            if (_bufferSphere != null && _bufferSphere.count > 0)
+            {
+                _bufferSphere.Release();
+                _bufferSphere = null;
+            }
+
+            if (_bufferSphere == null)
+            {
+                _bufferSphere = new ComputeBuffer(spheres.Count, RSphere.GetSize());
+            }
+
+            _bufferSphere.SetData(spheres);
         }
 
         private void SetShaderParams(ref RenderingData renderingData)
@@ -130,11 +160,16 @@ namespace GpuRayTracing
             shader.SetVector(Id_DirectionalLight, _settings.DirectionLight);
 
             // Primitives
-            if (_planeBufer != null)
+            if (_bufferPlane != null)
             {
-                shader.SetBuffer(0, Id_Planes, _planeBufer);
+                shader.SetBuffer(0, Id_Planes, _bufferPlane);
             }
-            
+
+            if (_bufferSphere != null)
+            {
+                shader.SetBuffer(0, Id_Spheres, _bufferSphere);
+            }
+
             // Other params
             _settings.RayTracingShader.SetTexture(0, Id_SkyBoxTexture, _settings.SkyBox);
             _settings.RayTracingShader.SetInt(Id_ReflectionsCount, _settings.ReflectionsCount);
