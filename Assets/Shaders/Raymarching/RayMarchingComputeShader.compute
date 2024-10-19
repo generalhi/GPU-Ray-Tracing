@@ -89,7 +89,7 @@ float3 Shade(inout Ray ray, RayHit hit)
     if (hit.Distance < 1.#INF)
     {
         float3 specular = 0.6;
-        float3 albedo = 0.001;
+        float3 albedo = 0.8;
 
         ray.Position = hit.Position + hit.Normal * 0.001;
         ray.Direction = reflect(ray.Direction, hit.Normal);
