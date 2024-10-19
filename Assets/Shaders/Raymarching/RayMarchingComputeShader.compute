@@ -1,9 +1,9 @@
 #pragma kernel CSMain
 
 #include "InputProperties.hlsl"
-#include "RaymarchingPrimitives.hlsl"
 #include "Ray.hlsl"
 #include "RayHit.hlsl"
+#include "RaymarchingPrimitives.hlsl"
 #include "SmoothFunctions.hlsl"
 #include "TransformFunctions.hlsl"
 
@@ -17,30 +17,12 @@ float3 SkyBoxColor(inout Ray ray)
     return SkyBoxTexture.SampleLevel(sampler_SkyBoxTexture, float2(phi, theta), 0.0).xyz;
 }
 
-float3 Shade(inout Ray ray, RayHit hit)
+float2 Map(inout RayHit hit)
 {
-    if (hit.Distance < 1.#INF)
-    {
-        float3 specular = 0.8;
+    float ground = SdPlaneY(hit.Position.y, 0.5);
+    float sphere = SdSphere(Move(hit.Position, DeltaSin(1.0, float3(2.5, 0.0, 0.0))), 0.9);
 
-        ray.Position = hit.Position + hit.Normal * 0.001;
-        ray.Direction = reflect(ray.Direction, hit.Normal);
-        ray.Energy *= specular;
-        //return hit.Normal * 0.5 + 0.5;
-        return 0.0;
-    }
-    else
-    {
-        return SkyBoxColor(ray);
-    }
-}
-
-float2 Map(float3 position)
-{
-    float ground = SdPlaneY(position.y, 0.5);
-    float sphere = SdSphere(Move(position, DeltaSin(1.0, float3(2.5, 0.0, 0.0))), 0.9);
-
-    float3 pBox = position;
+    float3 pBox = hit.Position;
     pBox = Move(pBox, DeltaSin(1.0, float3(0.0, 1.0, 0.0)));
     pBox = Rotation(pBox, float3(0.0, 0.0, 1.0), Time * 0.5);
     pBox = Rotation(pBox, float3(1.0, 0.0, 0.0), Time * 1.0);
@@ -50,17 +32,28 @@ float2 Map(float3 position)
     return SmoothMin2(result, ground, 0.05);
 }
 
-float3 CalcNormal(in float3 pos)
+float3 CalcNormal(in RayHit hit)
 {
     float2 e = float2(1.0, -1.0) * 0.5773 * 0.005;
+
+    RayHit hit1 = hit;
+    RayHit hit2 = hit;
+    RayHit hit3 = hit;
+    RayHit hit4 = hit;
+
+    hit1.Position += e.xyy;
+    hit2.Position += e.yyx;
+    hit3.Position += e.yxy;
+    hit4.Position += e.xxx;
+
     return normalize(
-        e.xyy * Map(pos + e.xyy).x +
-        e.yyx * Map(pos + e.yyx).x +
-        e.yxy * Map(pos + e.yxy).x +
-        e.xxx * Map(pos + e.xxx).x);
+        e.xyy * Map(hit1).x +
+        e.yyx * Map(hit2).x +
+        e.yxy * Map(hit3).x +
+        e.xxx * Map(hit4).x);
 }
 
-RayHit RaymarchingTrace(Ray ray)
+RayHit Trace(Ray ray)
 {
     const float MaxDistance = 10.0;
     RayHit hit = InitRayHit();
@@ -69,7 +62,7 @@ RayHit RaymarchingTrace(Ray ray)
     for (int i = 0; i < 512; i++)
     {
         hit.Position = ray.Position + ray.Direction * hit.Distance;
-        float distance = Map(hit.Position);
+        float distance = Map(hit);
         if (distance < 0.0 ||
             hit.Distance > MaxDistance)
         {
@@ -85,10 +78,42 @@ RayHit RaymarchingTrace(Ray ray)
     }
     else
     {
-        hit.Normal = CalcNormal(hit.Position);
+        hit.Normal = CalcNormal(hit);
     }
 
     return hit;
+}
+
+float3 Shade(inout Ray ray, RayHit hit)
+{
+    if (hit.Distance < 1.#INF)
+    {
+        float3 specular = 0.6;
+        float3 albedo = 0.001;
+
+        ray.Position = hit.Position + hit.Normal * 0.001;
+        ray.Direction = reflect(ray.Direction, hit.Normal);
+        ray.Energy *= specular;
+        //ray.Energy *= hit.Specular;
+
+        Ray shadowRay = InitRay(
+            hit.Position + hit.Normal * 0.001,
+            -1.0 * DirectionalLight.xyz);
+        RayHit shadowHit = Trace(shadowRay);
+        if (shadowHit.Distance < 1.#INF)
+        {
+            return 0.0;
+        }
+
+        //return hit.Normal * 0.5 + 0.5;
+        //return 0.0;
+        return saturate(dot(hit.Normal, DirectionalLight.xyz) * -1) * DirectionalLight.w * albedo;
+        //return saturate(dot(hit.Normal, DirectionalLight.xyz) * -1) * DirectionalLight.w * hit.Albedo;
+    }
+    else
+    {
+        return SkyBoxColor(ray);
+    }
 }
 
 float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
@@ -102,7 +127,7 @@ float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
 
     for (int i = 0; i < ReflectionsCount; i++)
     {
-        RayHit hit = RaymarchingTrace(ray);
+        RayHit hit = Trace(ray);
         color += ray.Energy * Shade(ray, hit);
 
         if (!any(ray.Energy))

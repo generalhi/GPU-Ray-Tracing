@@ -9,6 +9,7 @@ namespace GpuRayTracing
     {
         public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
         public ComputeShader RayTracingShader;
+        public Vector4 DirectionLight;
         public Texture SkyBox;
         public int ReflectionsCount;
     }

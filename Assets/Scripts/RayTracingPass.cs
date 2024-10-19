@@ -8,12 +8,12 @@ namespace GpuRayTracing
     {
         private readonly RayTracingPassSettings _settings;
         private Material _material;
-
         private RenderTexture _rt;
 
         private readonly int Id_Result = Shader.PropertyToID("Result");
         private readonly int Id_World = Shader.PropertyToID("World");
         private readonly int Id_Projection = Shader.PropertyToID("Projection");
+        private readonly int DirectionalLight = Shader.PropertyToID("DirectionalLight");
         private readonly int Id_SkyBoxTexture = Shader.PropertyToID("SkyBoxTexture");
         private readonly int Id_Time = Shader.PropertyToID("Time");
         private readonly int Id_ReflectionsCount = Shader.PropertyToID("ReflectionsCount");
@@ -74,11 +74,21 @@ namespace GpuRayTracing
 
         private void SetShaderParams(ref RenderingData renderingData)
         {
-            _settings.RayTracingShader.SetTexture(0, Id_Result, _rt);
-            _settings.RayTracingShader.SetMatrix(Id_World, renderingData.cameraData.camera.cameraToWorldMatrix);
-            _settings.RayTracingShader.SetMatrix(
+            var shader = _settings.RayTracingShader;
+
+            // Textures
+            shader.SetTexture(0, Id_Result, _rt);
+
+            // Matrix
+            shader.SetMatrix(Id_World, renderingData.cameraData.camera.cameraToWorldMatrix);
+            shader.SetMatrix(
                 Id_Projection,
                 renderingData.cameraData.camera.projectionMatrix.inverse);
+
+            // Lights
+            shader.SetVector(DirectionalLight, _settings.DirectionLight);
+
+            // Other params
             _settings.RayTracingShader.SetTexture(0, Id_SkyBoxTexture, _settings.SkyBox);
             _settings.RayTracingShader.SetInt(Id_ReflectionsCount, _settings.ReflectionsCount);
             _settings.RayTracingShader.SetFloat(Id_Time, Time.time);
