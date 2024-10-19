@@ -3,16 +3,17 @@ using UnityEngine;
 
 namespace GpuRayTracing.Entities
 {
-    public struct Sphere
+    public struct RPlane
     {
-        public Vector3 Position;
-        public float Radius;
-        public Vector3 Albedo;
+        public Vector3 Normal;
+        public float K;
+        public float Smooth;
         public Vector3 Specular;
+        public Vector3 Albedo;
 
         public static int GetSize()
         {
-            return Marshal.SizeOf<Sphere>();
+            return Marshal.SizeOf<RPlane>();
         }
     }
 }

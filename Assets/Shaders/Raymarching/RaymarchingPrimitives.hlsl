@@ -1,6 +1,6 @@
-float SdPlaneY(float y, float k)
+float SdPlane(float3 position, in Plane plane)
 {
-    return y + k;
+    return dot(position, plane.Normal) + plane.K;
 }
 
 float SdSphere(float3 p, float s)
