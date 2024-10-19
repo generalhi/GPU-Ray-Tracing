@@ -1,0 +1,121 @@
+#pragma kernel CSMain
+
+#include "InputProperties.hlsl"
+#include "RaymarchingPrimitives.hlsl"
+#include "Ray.hlsl"
+#include "RayHit.hlsl"
+#include "SmoothFunctions.hlsl"
+#include "TransformFunctions.hlsl"
+
+static const float PI = 3.14159265f;
+
+float3 SkyBoxColor(inout Ray ray)
+{
+    ray.Energy = 0.0;
+    float phi = atan2(ray.Direction.x, -ray.Direction.z) / -PI * 0.5;
+    float theta = acos(ray.Direction.y) / -PI;
+    return SkyBoxTexture.SampleLevel(sampler_SkyBoxTexture, float2(phi, theta), 0.0).xyz;
+}
+
+float3 Shade(inout Ray ray, RayHit hit)
+{
+    if (hit.Distance < 1.#INF)
+    {
+        float3 specular = 0.8;
+
+        ray.Position = hit.Position + hit.Normal * 0.001;
+        ray.Direction = reflect(ray.Direction, hit.Normal);
+        ray.Energy *= specular;
+        //return hit.Normal * 0.5 + 0.5;
+        return 0.0;
+    }
+    else
+    {
+        return SkyBoxColor(ray);
+    }
+}
+
+float2 Map(float3 position)
+{
+    float ground = SdPlaneY(position.y, 0.5);
+    float sphere = SdSphere(Move(position, DeltaSin(1.0, float3(2.5, 0.0, 0.0))), 0.9);
+
+    float3 pBox = position;
+    pBox = Move(pBox, DeltaSin(1.0, float3(0.0, 1.0, 0.0)));
+    pBox = Rotation(pBox, float3(0.0, 0.0, 1.0), Time * 0.5);
+    pBox = Rotation(pBox, float3(1.0, 0.0, 0.0), Time * 1.0);
+    float box = SdBox(pBox, 0.5);
+
+    float2 result = SmoothMin2(sphere, box, 0.2);
+    return SmoothMin2(result, ground, 0.05);
+}
+
+float3 CalcNormal(in float3 pos)
+{
+    float2 e = float2(1.0, -1.0) * 0.5773 * 0.005;
+    return normalize(
+        e.xyy * Map(pos + e.xyy).x +
+        e.yyx * Map(pos + e.yyx).x +
+        e.yxy * Map(pos + e.yxy).x +
+        e.xxx * Map(pos + e.xxx).x);
+}
+
+RayHit RaymarchingTrace(Ray ray)
+{
+    const float MaxDistance = 10.0;
+    RayHit hit = InitRayHit();
+    hit.Distance = 0.0;
+
+    for (int i = 0; i < 512; i++)
+    {
+        hit.Position = ray.Position + ray.Direction * hit.Distance;
+        float distance = Map(hit.Position);
+        if (distance < 0.0 ||
+            hit.Distance > MaxDistance)
+        {
+            break;
+        }
+
+        hit.Distance += distance;
+    }
+
+    if (hit.Distance > MaxDistance)
+    {
+        hit.Distance = 1.#INF;
+    }
+    else
+    {
+        hit.Normal = CalcNormal(hit.Position);
+    }
+
+    return hit;
+}
+
+float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
+{
+    uint w, h;
+    Result.GetDimensions(w, h);
+    float2 uvr = (id.xy * 2.0 - float2(w, h)) / h;
+
+    Ray ray = InitRay(float3(0.0, 0.0, -3.0), normalize(float3(uvr, 1.0)));
+    float3 color = 0.0;
+
+    for (int i = 0; i < ReflectionsCount; i++)
+    {
+        RayHit hit = RaymarchingTrace(ray);
+        color += ray.Energy * Shade(ray, hit);
+
+        if (!any(ray.Energy))
+        {
+            break;
+        }
+    }
+
+    return float4(color, 1.0);
+}
+
+[numthreads(8,8,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    Result[id.xy] = MainRaymarching(id);
+}
