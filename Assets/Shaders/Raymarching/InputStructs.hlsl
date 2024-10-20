@@ -23,7 +23,7 @@ struct Cube
     float3 Position;
     float3 Move;
     float3 MoveSpeed;
-    float3 Rotation;
+    float3 RotationSpeed;
     float Size;
     float Smooth;
     float3 Specular;

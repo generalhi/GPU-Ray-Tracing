@@ -132,7 +132,29 @@ namespace GpuRayTracing
                     Smooth = 0.2f,
                     Specular = new Vector3(0f, 0f, 0f),
                     Albedo = new Vector3(0f, 0f, 0f)
-                }
+                },
+                /*
+                new RSphere
+                {
+                    Position = new Vector3(0f, 0f, 0f),
+                    Move = new Vector3(2.5f, 0f, 0f),
+                    MoveSpeed = new Vector3(0.3f, 0f, 0f),
+                    Radius = 0.5f,
+                    Smooth = 0.2f,
+                    Specular = new Vector3(0f, 0f, 0f),
+                    Albedo = new Vector3(0f, 0f, 0f)
+                },
+                new RSphere
+                {
+                    Position = new Vector3(0f, 0f, 0f),
+                    Move = new Vector3(2.0f, 0f, 0f),
+                    MoveSpeed = new Vector3(0.7f, 0f, 0f),
+                    Radius = 0.4f,
+                    Smooth = 0.2f,
+                    Specular = new Vector3(0f, 0f, 0f),
+                    Albedo = new Vector3(0f, 0f, 0f)
+                },
+            */
             };
 
             if (_bufferSphere != null && _bufferSphere.count > 0)
@@ -158,12 +180,23 @@ namespace GpuRayTracing
                     Position = new Vector3(0f, 0f, 0f),
                     Move = new Vector3(0f, 1.2f, 0f),
                     MoveSpeed = new Vector3(0f, 1f, 0f),
-                    Rotation = new Vector3(1f, 0f, 0.5f),
+                    RotationSpeed = new Vector3(1f, 0f, 0.5f),
                     Size = 0.5f,
                     Smooth = 0.2f,
                     Specular = new Vector3(0f, 0f, 0f),
                     Albedo = new Vector3(0f, 0f, 0f)
-                }
+                },
+                new RCube
+                {
+                    Position = new Vector3(0f, -1.5f, 0f),
+                    Move = new Vector3(0f, 0f, 2f),
+                    MoveSpeed = new Vector3(0f, 0f, 0.5f),
+                    RotationSpeed = new Vector3(0.5f, 0.2f, 0.7f),
+                    Size = 0.5f,
+                    Smooth = 0.2f,
+                    Specular = new Vector3(0f, 0f, 0f),
+                    Albedo = new Vector3(0f, 0f, 0f)
+                },
             };
 
             if (_bufferCubes != null && _bufferCubes.count > 0)

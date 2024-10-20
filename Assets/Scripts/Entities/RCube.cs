@@ -8,7 +8,7 @@ namespace GpuRayTracing.Entities
         public Vector3 Position;
         public Vector3 Move;
         public Vector3 MoveSpeed;
-        public Vector3 Rotation;
+        public Vector3 RotationSpeed;
         public float Size;
         public float Smooth;
         public Vector3 Specular;
