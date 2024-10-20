@@ -20,7 +20,7 @@ float3 SkyBoxColor(inout Ray ray)
 
 float2 Map(inout RayHit hit)
 {
-    float2 result = float2(1000, 0);
+    float2 result = float2(1.#INF, 0);
 
     uint cubeCount, cubeStride;
     Cubes.GetDimensions(cubeCount, cubeStride);
@@ -32,6 +32,8 @@ float2 Map(inout RayHit hit)
         position = Move(position, cube.Position);
         position = Rotation(position, Time * cube.RotationSpeed);
         result = SmoothMin2(result, SdCube(position, cube.Size), cube.Smooth);
+        hit.Specular = lerp(hit.Specular, cube.Specular, result.y);
+        hit.Albedo = lerp(hit.Albedo, cube.Albedo, result.y);
     }
 
     // uint sphereCount, sphereStride;
@@ -42,15 +44,19 @@ float2 Map(inout RayHit hit)
     //     float3 move = DeltaSin(sphere.Move, sphere.MoveSpeed);
     //     float3 position = Move(hit.Position, move);
     //     result = SmoothMin2(result, SdSphere(position, sphere.Radius), sphere.Smooth);
+    //     hit.Specular = lerp(hit.Specular, sphere.Specular, result.y);
+    //     hit.Albedo = lerp(hit.Albedo, sphere.Albedo, result.y);
     // }
 
-    // uint plainsCount, plainsStride;
-    // Plains.GetDimensions(plainsCount, plainsStride);
-    // for (uint i = 0; i < plainsCount; i++)
-    // {
-    //     Plane plane = Plains[i];
-    //     result = SmoothMin2(result, SdPlane(hit.Position, plane.Normal, plane.K), plane.Smooth);
-    // }
+    uint plainsCount, plainsStride;
+    Plains.GetDimensions(plainsCount, plainsStride);
+    for (uint i = 0; i < plainsCount; i++)
+    {
+        Plane plane = Plains[i];
+        result = SmoothMin2(result, SdPlane(hit.Position, plane.Normal, plane.K), plane.Smooth);
+        hit.Specular = lerp(hit.Specular, plane.Specular, result.y);
+        hit.Albedo = lerp(hit.Albedo, plane.Albedo, result.y);
+    }
 
     return result;
 }
@@ -78,7 +84,7 @@ float3 CalcNormal(in RayHit hit)
 
 RayHit Trace(Ray ray)
 {
-    const float MaxDistance = 10.0;
+    const float MaxDistance = 1000.0;
     RayHit hit = InitRayHit();
     hit.Distance = 0.0;
 
@@ -111,13 +117,13 @@ float3 Shade(inout Ray ray, RayHit hit)
 {
     if (hit.Distance < 1.#INF)
     {
-        float3 specular = 0.3;
-        float3 albedo = float3(0.7, 0.5, 0.2);
+        //float3 specular = 0.4;
+        //float3 albedo = float3(0.7, 0.4, 0.1);
 
         ray.Position = hit.Position + hit.Normal * 0.001;
         ray.Direction = reflect(ray.Direction, hit.Normal);
-        ray.Energy *= specular;
-        //ray.Energy *= hit.Specular;
+        //ray.Energy *= specular;
+        ray.Energy *= hit.Specular;
 
         Ray shadowRay = InitRay(
             hit.Position + hit.Normal * 0.001,
@@ -130,8 +136,8 @@ float3 Shade(inout Ray ray, RayHit hit)
 
         //return hit.Normal * 0.5 + 0.5;
         //return 0.0;
-        return saturate(dot(hit.Normal, DirectionalLight.xyz) * -1) * DirectionalLight.w * albedo;
-        //return saturate(dot(hit.Normal, DirectionalLight.xyz) * -1) * DirectionalLight.w * hit.Albedo;
+        //return saturate(dot(hit.Normal, DirectionalLight.xyz) * -1) * DirectionalLight.w * albedo;
+        return saturate(dot(hit.Normal, DirectionalLight.xyz) * -1) * DirectionalLight.w * hit.Albedo;
     }
     else
     {

@@ -98,10 +98,10 @@ namespace GpuRayTracing
                 new RPlane
                 {
                     Normal = new Vector3(0f, 1f, 0f),
-                    K = 0.6f,
+                    K = 1.8f,
                     Smooth = 0.2f,
-                    Specular = new Vector3(0f, 0f, 0f),
-                    Albedo = new Vector3(0f, 0f, 0f)
+                    Specular = new Vector3(0.8f, 0.8f, 0.8f),
+                    Albedo = new Vector3(0.1f, 0.1f, 0.1f)
                 }
             };
 
@@ -128,10 +128,10 @@ namespace GpuRayTracing
                     Position = new Vector3(0f, 0f, 0f),
                     Move = new Vector3(2.5f, 0f, 0f),
                     MoveSpeed = new Vector3(1.0f, 0f, 0f),
-                    Radius = 0.9f,
+                    Radius = 0.3f,
                     Smooth = 0.2f,
-                    Specular = new Vector3(0f, 0f, 0f),
-                    Albedo = new Vector3(0f, 0f, 0f)
+                    Specular = new Vector3(0.01f, 0.01f, 0.01f),
+                    Albedo = new Vector3(0.01f, 0.01f, 0.01f)
                 },
                 /*
                 new RSphere
@@ -183,8 +183,8 @@ namespace GpuRayTracing
                     RotationSpeed = new Vector3(0.5f, 0f, 0.25f),
                     Size = 0.5f,
                     Smooth = 0.2f,
-                    Specular = new Vector3(0f, 0f, 0f),
-                    Albedo = new Vector3(0f, 0f, 0f)
+                    Specular = new Vector3(0.9f, 0.8f, 0.3f),
+                    Albedo = new Vector3(0.9f, 0.8f, 0.01f)
                 },
                 new RCube
                 {
@@ -194,8 +194,8 @@ namespace GpuRayTracing
                     RotationSpeed = new Vector3(0.3f, 0f, 0.1f),
                     Size = 0.5f,
                     Smooth = 0.2f,
-                    Specular = new Vector3(0f, 0f, 0f),
-                    Albedo = new Vector3(0f, 0f, 0f)
+                    Specular = new Vector3(0.9f, 0.3f, 0.3f),
+                    Albedo = new Vector3(0.9f, 0.01f, 0.01f)
                 },
             };
 
