@@ -23,7 +23,7 @@ float2 Map(inout RayHit hit)
     float2 result = float2(1000, 0);
 
     uint cubeCount, cubeStride;
-    Spheres.GetDimensions(cubeCount, cubeStride);
+    Cubes.GetDimensions(cubeCount, cubeStride);
     for (uint i = 0; i < cubeCount; i++)
     {
         Cube cube = Cubes[i];
@@ -34,23 +34,23 @@ float2 Map(inout RayHit hit)
         result = SmoothMin2(result, SdCube(position, cube.Size), cube.Smooth);
     }
 
-    uint sphereCount, sphereStride;
-    Spheres.GetDimensions(sphereCount, sphereStride);
-    for (uint i = 0; i < sphereCount; i++)
-    {
-        Sphere sphere = Spheres[i];
-        float3 move = DeltaSin(sphere.Move, sphere.MoveSpeed);
-        float3 position = Move(hit.Position, move);
-        result = SmoothMin2(result, SdSphere(position, sphere.Radius), sphere.Smooth);
-    }
+    // uint sphereCount, sphereStride;
+    // Spheres.GetDimensions(sphereCount, sphereStride);
+    // for (uint i = 0; i < sphereCount; i++)
+    // {
+    //     Sphere sphere = Spheres[i];
+    //     float3 move = DeltaSin(sphere.Move, sphere.MoveSpeed);
+    //     float3 position = Move(hit.Position, move);
+    //     result = SmoothMin2(result, SdSphere(position, sphere.Radius), sphere.Smooth);
+    // }
 
-    uint plainsCount, plainsStride;
-    Plains.GetDimensions(plainsCount, plainsStride);
-    for (uint i = 0; i < plainsCount; i++)
-    {
-        Plane plane = Plains[i];
-        result = SmoothMin2(result, SdPlane(hit.Position, plane.Normal, plane.K), plane.Smooth);
-    }
+    // uint plainsCount, plainsStride;
+    // Plains.GetDimensions(plainsCount, plainsStride);
+    // for (uint i = 0; i < plainsCount; i++)
+    // {
+    //     Plane plane = Plains[i];
+    //     result = SmoothMin2(result, SdPlane(hit.Position, plane.Normal, plane.K), plane.Smooth);
+    // }
 
     return result;
 }

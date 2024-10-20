@@ -179,8 +179,8 @@ namespace GpuRayTracing
                 {
                     Position = new Vector3(0f, 0f, 0f),
                     Move = new Vector3(0f, 1.2f, 0f),
-                    MoveSpeed = new Vector3(0f, 1f, 0f),
-                    RotationSpeed = new Vector3(1f, 0f, 0.5f),
+                    MoveSpeed = new Vector3(0f, 0.5f, 0f),
+                    RotationSpeed = new Vector3(0.5f, 0f, 0.25f),
                     Size = 0.5f,
                     Smooth = 0.2f,
                     Specular = new Vector3(0f, 0f, 0f),
@@ -188,10 +188,10 @@ namespace GpuRayTracing
                 },
                 new RCube
                 {
-                    Position = new Vector3(0f, -1.5f, 0f),
-                    Move = new Vector3(0f, 0f, 2f),
-                    MoveSpeed = new Vector3(0f, 0f, 0.5f),
-                    RotationSpeed = new Vector3(0.5f, 0.2f, 0.7f),
+                    Position = new Vector3(0f, 0f, 0f),
+                    Move = new Vector3(0f, 1.2f, 0f),
+                    MoveSpeed = new Vector3(0f, 0.25f, 0f),
+                    RotationSpeed = new Vector3(0.5f, 0f, 0.25f),
                     Size = 0.5f,
                     Smooth = 0.2f,
                     Specular = new Vector3(0f, 0f, 0f),
