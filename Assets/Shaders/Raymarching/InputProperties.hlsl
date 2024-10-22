@@ -10,6 +10,7 @@ SamplerState sampler_SkyBoxTexture;
 
 float Time;
 int ReflectionsCount;
+float2 MousePosition;
 
 StructuredBuffer<Plane> Plains;
 StructuredBuffer<Sphere> Spheres;

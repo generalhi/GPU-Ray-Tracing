@@ -145,13 +145,30 @@ float3 Shade(inout Ray ray, RayHit hit)
     }
 }
 
+float2 MouseCoord;
+
 float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
 {
     uint w, h;
     Result.GetDimensions(w, h);
     float2 uvr = (id.xy * 2.0 - float2(w, h)) / h;
 
-    Ray ray = InitRay(float3(0.0, 0.0, -3.0), normalize(float3(uvr, 1.0)));
+    float2 md = (MousePosition.xy * 2.0 - float2(w, h)) / h;
+    md += float2(1.75, 0.75);
+
+    float3 position = float3(0.0, 0.0, -3.0);
+    float3 direction = normalize(float3(uvr, 1.0));
+
+    // Vertical
+    position.zy = mul(position.zy, Rotation2D(-md.y));
+    direction.zy = mul(direction.zy, Rotation2D(-md.y));
+
+    // Horizontal
+    position.xz = mul(position.xz, Rotation2D(-md.x));
+    direction.xz = mul(direction.xz, Rotation2D(-md.x));
+
+    Ray ray = InitRay(position, direction);
+
     float3 color = 0.0;
 
     for (int i = 0; i < ReflectionsCount; i++)

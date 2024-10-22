@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using GpuRayTracing.Entities;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -11,6 +8,8 @@ namespace GpuRayTracing
     {
         private readonly RayTracingPassSettings _settings;
         private readonly SceneInitializer _sceneInitializer;
+        private readonly InputMouse _mouse;
+
         private Material _material;
         private RenderTexture _rt;
 
@@ -21,6 +20,7 @@ namespace GpuRayTracing
         private readonly int Id_SkyBoxTexture = Shader.PropertyToID("SkyBoxTexture");
         private readonly int Id_Time = Shader.PropertyToID("Time");
         private readonly int Id_ReflectionsCount = Shader.PropertyToID("ReflectionsCount");
+        private readonly int Id_MousePosition = Shader.PropertyToID("MousePosition");
 
         private readonly int Id_Planes = Shader.PropertyToID("Plains");
         private readonly int Id_Spheres = Shader.PropertyToID("Spheres");
@@ -31,12 +31,14 @@ namespace GpuRayTracing
             _settings = settings;
             renderPassEvent = _settings.renderPassEvent;
             _sceneInitializer = new SceneInitializer();
+            _mouse = new InputMouse();
         }
 
         public override void Execute(
             ScriptableRenderContext context,
             ref RenderingData renderingData)
         {
+            _mouse.Update();
             InitRenderTexture();
 
             // Set render target and run compute shader
@@ -117,6 +119,7 @@ namespace GpuRayTracing
             _settings.RayTracingShader.SetTexture(0, Id_SkyBoxTexture, _settings.SkyBox);
             _settings.RayTracingShader.SetInt(Id_ReflectionsCount, _settings.ReflectionsCount);
             _settings.RayTracingShader.SetFloat(Id_Time, Time.time);
+            _settings.RayTracingShader.SetVector(Id_MousePosition, _mouse.Position);
         }
     }
 }

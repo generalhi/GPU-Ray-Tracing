@@ -12,6 +12,13 @@ float3 Move(float3 position, float3 delta)
     return position + delta;
 }
 
+float2x2 Rotation2D(float a)
+{
+    float s = sin(a);
+    float c = cos(a);
+    return float2x2(c, -s, s, c);
+}
+
 float3 Rotation(float3 p, float3 angle)
 {
     float3 axisX = float3(1.0, 0.0, 0.0);
