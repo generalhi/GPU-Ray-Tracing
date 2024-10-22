@@ -10,12 +10,9 @@ namespace GpuRayTracing
     public class RayTracingPass : ScriptableRenderPass
     {
         private readonly RayTracingPassSettings _settings;
+        private readonly SceneInitializer _sceneInitializer;
         private Material _material;
         private RenderTexture _rt;
-
-        private ComputeBuffer _bufferPlane;
-        private ComputeBuffer _bufferSphere;
-        private ComputeBuffer _bufferCubes;
 
         private readonly int Id_Result = Shader.PropertyToID("Result");
         private readonly int Id_World = Shader.PropertyToID("World");
@@ -33,7 +30,7 @@ namespace GpuRayTracing
         {
             _settings = settings;
             renderPassEvent = _settings.renderPassEvent;
-            InitScene();
+            _sceneInitializer = new SceneInitializer();
         }
 
         public override void Execute(
@@ -84,135 +81,6 @@ namespace GpuRayTracing
             }
         }
 
-        private void InitScene()
-        {
-            InitPlanes();
-            InitSpheres();
-            InitCubes();
-        }
-
-        private void InitPlanes()
-        {
-            var planes = new List<RPlane>
-            {
-                new RPlane
-                {
-                    Normal = new Vector3(0f, 1f, 0f),
-                    K = 1.8f,
-                    Smooth = 0.2f,
-                    Specular = new Vector3(0.8f, 0.8f, 0.8f),
-                    Albedo = new Vector3(0.1f, 0.1f, 0.1f)
-                }
-            };
-
-            if (_bufferPlane != null && _bufferPlane.count > 0)
-            {
-                _bufferPlane.Release();
-                _bufferPlane = null;
-            }
-
-            if (_bufferPlane == null)
-            {
-                _bufferPlane = new ComputeBuffer(planes.Count, RPlane.GetSize());
-            }
-
-            _bufferPlane.SetData(planes);
-        }
-
-        private void InitSpheres()
-        {
-            var spheres = new List<RSphere>
-            {
-                new RSphere
-                {
-                    Position = new Vector3(0f, 0f, 0f),
-                    Move = new Vector3(2.5f, 0f, 0f),
-                    MoveSpeed = new Vector3(1.0f, 0f, 0f),
-                    Radius = 0.3f,
-                    Smooth = 0.2f,
-                    Specular = new Vector3(0.01f, 0.01f, 0.01f),
-                    Albedo = new Vector3(0.01f, 0.01f, 0.01f)
-                },
-                /*
-                new RSphere
-                {
-                    Position = new Vector3(0f, 0f, 0f),
-                    Move = new Vector3(2.5f, 0f, 0f),
-                    MoveSpeed = new Vector3(0.3f, 0f, 0f),
-                    Radius = 0.5f,
-                    Smooth = 0.2f,
-                    Specular = new Vector3(0f, 0f, 0f),
-                    Albedo = new Vector3(0f, 0f, 0f)
-                },
-                new RSphere
-                {
-                    Position = new Vector3(0f, 0f, 0f),
-                    Move = new Vector3(2.0f, 0f, 0f),
-                    MoveSpeed = new Vector3(0.7f, 0f, 0f),
-                    Radius = 0.4f,
-                    Smooth = 0.2f,
-                    Specular = new Vector3(0f, 0f, 0f),
-                    Albedo = new Vector3(0f, 0f, 0f)
-                },
-            */
-            };
-
-            if (_bufferSphere != null && _bufferSphere.count > 0)
-            {
-                _bufferSphere.Release();
-                _bufferSphere = null;
-            }
-
-            if (_bufferSphere == null)
-            {
-                _bufferSphere = new ComputeBuffer(spheres.Count, RSphere.GetSize());
-            }
-
-            _bufferSphere.SetData(spheres);
-        }
-
-        private void InitCubes()
-        {
-            var cubes = new List<RCube>
-            {
-                new RCube
-                {
-                    Position = new Vector3(0f, 0f, 0f),
-                    Move = new Vector3(0f, 1.2f, 0f),
-                    MoveSpeed = new Vector3(0f, 0.3f, 0f),
-                    RotationSpeed = new Vector3(0.5f, 0f, 0.25f),
-                    Size = 0.5f,
-                    Smooth = 0.2f,
-                    Specular = new Vector3(0.9f, 0.8f, 0.3f),
-                    Albedo = new Vector3(0.9f, 0.8f, 0.01f)
-                },
-                new RCube
-                {
-                    Position = new Vector3(0f, 0f, 0f),
-                    Move = new Vector3(0f, 1.2f, 0f),
-                    MoveSpeed = new Vector3(0f, 0.4f, 0f),
-                    RotationSpeed = new Vector3(0.3f, 0f, 0.1f),
-                    Size = 0.5f,
-                    Smooth = 0.2f,
-                    Specular = new Vector3(0.9f, 0.3f, 0.3f),
-                    Albedo = new Vector3(0.9f, 0.01f, 0.01f)
-                },
-            };
-
-            if (_bufferCubes != null && _bufferCubes.count > 0)
-            {
-                _bufferCubes.Release();
-                _bufferCubes = null;
-            }
-
-            if (_bufferCubes == null)
-            {
-                _bufferCubes = new ComputeBuffer(cubes.Count, RCube.GetSize());
-            }
-
-            _bufferCubes.SetData(cubes);
-        }
-
         private void SetShaderParams(ref RenderingData renderingData)
         {
             var shader = _settings.RayTracingShader;
@@ -230,19 +98,19 @@ namespace GpuRayTracing
             shader.SetVector(Id_DirectionalLight, _settings.DirectionLight);
 
             // Primitives
-            if (_bufferPlane != null)
+            if (_sceneInitializer.BufferPlane != null)
             {
-                shader.SetBuffer(0, Id_Planes, _bufferPlane);
+                shader.SetBuffer(0, Id_Planes, _sceneInitializer.BufferPlane);
             }
 
-            if (_bufferSphere != null)
+            if (_sceneInitializer.BufferSphere != null)
             {
-                shader.SetBuffer(0, Id_Spheres, _bufferSphere);
+                shader.SetBuffer(0, Id_Spheres, _sceneInitializer.BufferSphere);
             }
 
-            if (_bufferCubes != null)
+            if (_sceneInitializer.BufferCubes != null)
             {
-                shader.SetBuffer(0, Id_Cubes, _bufferCubes);
+                shader.SetBuffer(0, Id_Cubes, _sceneInitializer.BufferCubes);
             }
 
             // Other params
