@@ -1,3 +1,4 @@
 # GPU-Ray-Tracing
 
-![alt text](https://youtu.be/-1OxPZp3JDg "Screen")
+Video
+[![Watch the video](https://img.youtube.com/vi/-1OxPZp3JDg/maxresdefault.jpg)](https://youtu.be/-1OxPZp3JDg)
