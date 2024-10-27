@@ -84,15 +84,15 @@ float3 CalcNormal(in RayHit hit)
 
 RayHit Trace(Ray ray)
 {
-    const float MaxDistance = 1000.0;
+    const float MaxDistance = 100.0;
     RayHit hit = InitRayHit();
     hit.Distance = 0.0;
 
-    for (int i = 0; i < 512; i++)
+    for (int i = 0; i < 256; i++)
     {
         hit.Position = ray.Position + ray.Direction * hit.Distance;
         float distance = Map(hit);
-        if (distance < 0.0 ||
+        if (distance < 0.001 ||
             hit.Distance > MaxDistance)
         {
             break;
@@ -144,8 +144,6 @@ float3 Shade(inout Ray ray, RayHit hit)
         return SkyBoxColor(ray);
     }
 }
-
-float2 MouseCoord;
 
 float4 MainRaymarching(uint3 id : SV_DispatchThreadID)
 {
